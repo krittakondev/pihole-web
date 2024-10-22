@@ -199,9 +199,11 @@ $(function () {
       $("td:eq(0)", row).on("hover", function () {
         this.title = data.ip.join("\n");
       });
-
+      if (data.comment && data.comment.length > 0) {
+        $("td:eq(1)", row).html(data.hwaddr + "<br/>(" + data.comment+")");
+      }
       // MAC + Vendor field if available
-      if (data.macVendor && data.macVendor.length > 0) {
+      else if (data.macVendor && data.macVendor.length > 0) {
         $("td:eq(1)", row).html(data.hwaddr + "<br/>" + data.macVendor);
       }
 

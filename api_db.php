@@ -25,7 +25,21 @@ $data = array();
 //    sudo apt-get install php5-sqlite
 
 $QUERYDB = getQueriesDBFilename();
+$GRAVITYDB = getGravityDBFilename();
 $db = SQLite3_connect($QUERYDB);
+$db_g = SQLite3_connect($GRAVITYDB);
+
+
+if (isset($_GET['network_test']) && $auth) {
+    $network = array();
+    $results = $db_g->query('SELECT * FROM client');
+    while ($results !== false && $res = $results->fetchArray(SQLITE3_ASSOC)) {
+        array_push($network, $res);
+    }
+    $results->finalize();
+
+    $data = array_merge($data, array('network' => $network));
+}
 
 if (isset($_GET['network']) && $auth) {
     $network = array();
@@ -33,10 +47,10 @@ if (isset($_GET['network']) && $auth) {
 
     while ($results !== false && $res = $results->fetchArray(SQLITE3_ASSOC)) {
         $id = intval($res['id']);
-
         // Get IP addresses and host names for this device
         $res['ip'] = array();
         $res['name'] = array();
+        $res['comment'] = "";
         $network_addresses = $db->query("SELECT ip,name FROM network_addresses WHERE network_id = {$id} ORDER BY lastSeen DESC");
         while ($network_addresses !== false && $network_address = $network_addresses->fetchArray(SQLITE3_ASSOC)) {
             array_push($res['ip'], $network_address['ip']);
@@ -47,6 +61,13 @@ if (isset($_GET['network']) && $auth) {
             }
         }
         $network_addresses->finalize();
+
+        $mac_addr = strtolower($res['hwaddr']);
+        $clients = $db_g->query("SELECT comment FROM client WHERE LOWER(ip) = '$mac_addr'");
+        if ($row = $clients->fetchArray(SQLITE3_ASSOC)) {
+            $res['comment'] = $row['comment'];
+        }
+        $clients->finalize();
 
         // UTF-8 encode vendor
         $res['macVendor'] = utf8_encode($res['macVendor']);
